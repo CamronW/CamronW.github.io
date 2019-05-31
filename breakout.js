@@ -5,18 +5,67 @@ canvas.width = gameWidth
 canvas.height = gameHeight + 200
 var c = canvas.getContext("2d")
 
+var blockColoursDict = {
+	1:"#11ff55",
+	2:"#11f3ff",
+	3:"#1178ff",
+	4:"#ffaf11",
+	5:"#ff2011",
+	6:"#f44274",
+	7:"#11f3ff",
+	8:"#1178ff",
+	9:"#ffaf11",
+	10:"#ff2011",
+	15:"#ffffff",
+};
+
 class Game{
 	constructor(){
 		//Colours
 		this.backgroundColour = "#f4eed7";
 		this.level = 1;
-		this.money = 0;
+		this.money = 10000;
 		this.clickDamage = 1;
 		this.clickDamageCost = 10;
+		this.circleArray = [];
+
+		//Normal Ball
+		this.normalBallCost = 10;
+		this.normalBallDamage = 1;
+		this.normalBallVel = 2;
+
+
+		//Speed Ball
+		this.speedBallCost = 50;
+		this.speedBallDamage = 1;
+		this.speedBallVel = 2;
 	}
 	getMoney(){
 		return this.money;
 	}
+
+	drawAndUpdateBalls(){
+		for (var i=0; i<game.circleArray.length; i++){
+			var circle = game.circleArray[i];
+			//Draw circle
+			c.beginPath();
+			try {
+				c.arc(circle.circleX, circle.circleY, circle.circleRadius, 0, Math.PI * 2, false);
+			}
+			catch (err){
+				console.log(err)
+				console.log(circle.circleX, circle.circleY, circle.circleRadius, 0, Math.PI * 2, false);
+			}
+			c.lineWidth = 5;
+			c.strokeStyle = "black";
+			c.stroke();
+			c.fillStyle = circle.colour;
+			c.fill();
+			c.closePath();
+			circle.update();
+		}
+	}
+
 }
 
 class GameBoard{
@@ -39,8 +88,9 @@ class GameBoard{
 				var newBlock = new EmptyBlock();
 				}
 				else{
-					var randomHealth = Math.floor(Math.random() * Math.floor(5));
-					var newBlock = new NormalBlock(randomHealth + 1);
+					//var randomHealth = Math.floor(Math.random() * Math.floor(game.level)) + 1;
+					var randomHealth = game.level;
+					var newBlock = new NormalBlock(randomHealth);
 				}
 				this.gameArray.push(newBlock);
 			}
@@ -70,14 +120,97 @@ function getBuyLevelText(){
 }
 
 function squareClickFunction(){
-	console.log("niiice")
+	//console.log("niiice")
 }
 
 function buyClickDamage(){
 	console.log("trying to buy click damage")
-	if (game.money >= game.clickDamageCost){
-		game.clickDamage = game.clickDamage + 1;
-		game.money -= game.clickDamageCost;
+	if (game.money >= game.clickDamage){
+		
+		game.money -= game.clickDamage;
+	}
+}
+
+function noneText(){
+	return ""
+}
+
+function buyNormalBall(){
+	console.log("trying to buy normal ball")
+	if (game.money >= game.normalBallCost){
+		game.normalBallCost = Math.floor((game.normalBallCost + 3) * 1.1);
+		randPosX = Math.random() * gameWidth
+		randPosY = Math.random() * gameHeight
+		radius = 15
+		//velX = Math.random() * 5
+		//velY = Math.random() * 5
+		colour = "#f442f4"
+		game.circleArray.push(new NormalBall(randPosX, randPosY, radius, game.normalBallVel, game.normalBallVel, colour))
+		game.money -= game.normalBallCost;
+	}
+}
+
+function buyNormalBall(){
+	console.log("trying to buy normal ball")
+	if (game.money >= game.normalBallCost){
+		game.normalBallCost = Math.floor((game.normalBallCost + 3) * 1.1);
+		randPosX = Math.random() * gameWidth
+		randPosY = Math.random() * gameHeight
+		radius = 15
+		//velX = Math.random() * 5
+		//velY = Math.random() * 5
+		colour = "#f442f4"
+		game.circleArray.push(new NormalBall(randPosX, randPosY, radius, game.normalBallVel, game.normalBallVel, colour))
+		game.money -= game.normalBallCost;
+	}
+}
+
+function buyNormalBallText(){
+	return "$" + game.normalBallCost;
+}
+
+class UIBallElement{
+	constructor(circleX, circleY, circleRadius, colour){
+		this.circleX = circleX;
+		this.circleY = circleY;
+		this.circleRadius = circleRadius;
+		this.colour = colour;
+	}
+	draw(){
+		//Now the ball
+		c.beginPath();
+		c.arc(this.circleX, this.circleY, this.circleRadius, 0, Math.PI * 2, false);
+		c.lineWidth = 5;
+		c.strokeStyle = "black";
+		c.stroke();
+		c.fillStyle = this.colour;
+		c.fill();
+		c.closePath();
+	}
+}
+
+class UIBuyBallElement{
+	constructor(name, posX, posY, ballColour, onBuyClickFunction, text){
+		this.name = name;
+		this.posX = posX;
+		this.posY = posY;
+		this.ballColour = ballColour;
+		this.onBuyClickFunction = onBuyClickFunction;
+		this.text = text;
+	}
+
+	setup(){
+		//Create background
+		var newButton = new ButtonElement("buyNormalBallBg", this.posX, this.posY, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", noneText);
+		ui.elements.push(newButton);
+		var newButton = new ButtonElement("buyNormalBallBuyButton", this.posX, this.posY+80, 80, 30, true, "#F4EED7", true, "#000", this.onBuyClickFunction, true, "18px Oswald", "black", "center", this.text);
+		ui.elements.push(newButton);
+		var newBall = new UIBallElement(this.posX+40, this.posY+40, 15, this.ballColour);
+		ui.elements.push(newBall);
+	}
+
+	draw(){
+
 	}
 }
 
@@ -98,8 +231,19 @@ class UserInterface{
 		var newButton = new ButtonElement("levelText", 50, 510, 120, 30, true, "#55D400", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", getBuyLevelText);
 		this.elements.push(newButton);
 
+		//---Draw first ball buy button---//
+		//var newButton = new ButtonElement("buyNormalBallBg", 300, 510, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", noneText);
+		//this.elements.push(newButton);
+		let newUIBallElement = new UIBuyBallElement("NormalBall", 300, 510, "#f442f4", buyNormalBall, buyNormalBallText);
+		newUIBallElement.setup();
+		let newUIBallElement2 = new UIBuyBallElement("NormalBall", 400, 510, "#fff", buyNormalBall, buyNormalBallText);
+		newUIBallElement2.setup();
+
+
+
+
 	}
-	drawElements(){
+	drawTabOne(){
 		for (i=0; i<this.elements.length; i++){
 			let element = this.elements[i];
 			if (element instanceof ButtonElement){
@@ -109,7 +253,7 @@ class UserInterface{
 				c.rect(element.posX, element.posY, element.width, element.height);
 				c.strokeStyle = element.strokeColour;
 				if (element.useFill){c.fill()}
-				if (element.useStroke){c.stroke()};
+				if (element.useStroke){c.lineWidth=2; c.stroke()};
 
 				//Draw the text
 				c.font = element.font;
@@ -117,13 +261,20 @@ class UserInterface{
 				c.textAlign = element.textAlign;
 				if (element.useText){
 					if(element.textAlign == "right"){
-						let textPosX = element.posX + element.width - 5;
-						let textPosY = element.posY + (element.height / 1.3);
-					c.fillText(element.fillTextChar(), textPosX, textPosY);
+						var textPosX = element.posX + element.width - 5;
+						var textPosY = element.posY + (element.height / 1.3);
 					}
+					if(element.textAlign == "left"){
+						var textPosX = element.posX + 5;
+						var textPosY = element.posY + (element.height / 1.3);
+					}
+					if(element.textAlign == "center"){
+						var textPosX = element.posX + (element.width / 2);
+						var textPosY = element.posY + (element.height / 1.3);
+					}
+					c.fillText(element.fillTextChar(), textPosX, textPosY);
 				}
 			}
-
 			if (element instanceof TextElement){
 				c.beginPath()
 				//Draw the text
@@ -134,15 +285,15 @@ class UserInterface{
 					if(element.textAlign == "right"){
 						let textPosX = element.posX;
 						let textPosY = element.posY;
-
 					c.fillText(element.fillTextChar(), textPosX, textPosY);
 					}
-
-				}
+				}	
+			}
+			if (element instanceof UIBallElement){
+				element.draw();
 			}
 		}
 	}
-
 }
 ui = new UserInterface();
 
@@ -198,35 +349,32 @@ class NormalBlock {
 		this.colour = "#00a8ff";
 		this.useStroke = true;
 	}
+	updateColour(){
+		var hasPickedColour = false;
+		var pickedColour = this.health;
+		while (hasPickedColour == false){
+			if (pickedColour in blockColoursDict){
+				this.colour = blockColoursDict[pickedColour];
+		    	hasPickedColour = true;
+			}
+			else{
+		    	pickedColour = pickedColour - 1;
+		 	}
+		}
+	}
 }
 
-function NormalBall(circleX, circleY, circleRadius, velX, velY, colour){
-	this.circleRadius = circleRadius;
-	this.circleX = circleX;
-	this.circleY = circleY;
-	this.velX = velX;
-	this.velY = velY;
-	this.colour = colour
-	this.damage = 1;
-	
-	this.draw = function(){
-		//Draw circle
-		c.beginPath();
-		try {
-			c.arc(this.circleX, this.circleY, this.circleRadius, 0, Math.PI * 2, false);
-		}
-		catch (err){
-			console.log(err)
-			console.log(this.circleX, this.circleY, this.circleRadius, 0, Math.PI * 2, false);
-		}
-		//c.lineWidth = 10;
-		//c.strokeStyle = "black";
-		//c.stroke();
-		c.fillStyle = this.colour;
-		c.fill();
+class NormalBall{
+	constructor(circleX, circleY, circleRadius, velX, velY, colour){
+		this.circleRadius = circleRadius;
+		this.circleX = circleX;
+		this.circleY = circleY;
+		this.velX = velX;
+		this.velY = velY;
+		this.colour = colour;
 	}
 
-	this.update = function(){
+	update(){
 		//Movement
 		this.circleX = this.circleX + this.velX;
 		this.circleY = this.circleY + this.velY;
@@ -249,41 +397,41 @@ function NormalBall(circleX, circleY, circleRadius, velX, velY, colour){
 		for (i=0; i<gameBoard.blockWidth; i++){
 			for (j=0; j<gameBoard.blockHeight; j++){
 				arrayLoc = i + j*gameBoard.blockWidth;
-				block = gameBoard.gameArray[arrayLoc];
+				let block = gameBoard.gameArray[arrayLoc];
 				if (!(block instanceof EmptyBlock)){
 					//Circle
-					rect1Left = this.circleX - this.circleRadius;
-					rect1Right = this.circleX + this.circleRadius;
-					rect1Top = this.circleY - this.circleRadius;
-					rect1Bottom = this.circleY + this.circleRadius;
+					var rect1Left = this.circleX - this.circleRadius;
+					var rect1Right = this.circleX + this.circleRadius;
+					var rect1Top = this.circleY - this.circleRadius;
+					var rect1Bottom = this.circleY + this.circleRadius;
 
-					rect2Left = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
-					rect2Top = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
-					rect2Right = rect2Left + gameBoard.blockPixelWidth;
-					rect2Bottom = rect2Top + gameBoard.blockPixelHeight;
-					isTouchingBlock = rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Top, rect2Right, rect2Bottom)
+					var rect2Left = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
+					var rect2Top = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
+					var rect2Right = rect2Left + gameBoard.blockPixelWidth;
+					var rect2Bottom = rect2Top + gameBoard.blockPixelHeight;
+					var isTouchingBlock = rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Top, rect2Right, rect2Bottom)
 					//console.log(isTouchingBlock)
 					//Damage block
 					if(isTouchingBlock != null){
-						damageBlock(block, this.damage);
+						damageBlock(block, game.normalBallDamage);
 					}
 					if (isTouchingBlock == "leftTouching"){
 						this.velX = Math.abs(this.velX);
-						//this.circleX += 2;
+						this.circleX += 5;
 					} 
 					if (isTouchingBlock == "rightTouching"){
 						this.velX = -Math.abs(this.velX);
-						//this.circleX -= 2;
+						this.circleX -= 5;
 					} 
 					if (isTouchingBlock == "topTouching"){
 						//Positive
 						this.velY = Math.abs(this.velY);
-						//this.circleY -= 2;
+						this.circleY += 5;
 					} 
 					if (isTouchingBlock == "bottomTouching"){
 						//Negative
 						this.velY = -Math.abs(this.velY);
-						//this.circleY += 2;
+						this.circleY -= 5;
 					}
 
 				}
@@ -357,18 +505,18 @@ function mouseTouchingRect(rectX, rectY, rectWidth, rectHeight){
 }
 
 function damageBlock(block, damage){
-	if (block.health - game.clickDamage <= 0){
+	if (block.health - damage <= 0){
 		game.money += block.health;
 		newBlock = new EmptyBlock
 		gameBoard.gameArray[arrayLoc] = newBlock
 	}
 	else if(block.health != null){
-		game.money += game.clickDamage;
-		block.health = block.health - game.clickDamage;
+		game.money += damage;
+		block.health = block.health - damage;
 	}
 }
 
-function rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Y1, rect2X2, rect2Y2){
+function rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Top, rect2Right, rect2Bottom){
 	leftTouching = false;
 	rightTouching = false;
 	topTouching = false;
@@ -447,7 +595,10 @@ function drawBlocks(){
 		for (j=0; j<gameBoard.blockHeight; j++){
 			arrayLoc = i + j*gameBoard.blockWidth
 			//console.log("LOC", arrayLoc)
-			block = gameBoard.gameArray[arrayLoc];
+			let block = gameBoard.gameArray[arrayLoc];
+			if (!(block instanceof EmptyBlock)){
+				block.updateColour();
+			}
 			c.fillStyle = block.colour;
 			rectX = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
 			rectY = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
@@ -467,8 +618,8 @@ function drawBlocks(){
 			//Do text
 			if (block.health != null){
 				blockCenterX = rectX + (gameBoard.blockPixelWidth / 2)
-				blockCenterY = rectY + (gameBoard.blockPixelHeight / 1.4)
-				c.font = "16px Oswald";
+				blockCenterY = rectY + (gameBoard.blockPixelHeight / 1.35)
+				c.font = "18px Oswald";
 				c.fillStyle = "black";
 				c.textAlign = "center";
 				c.fillText(block.health, blockCenterX, blockCenterY);
@@ -496,9 +647,8 @@ function blocksAreEmpty(){
 }
 
 
-var circle = new NormalBall(0, 0, 15, 3.5, 7.8, "#000")
-frameCount = 0
 
+frameCount = 0
 oldUnixTime = Date.now()
 function animateLoop(){
 	//Stopwatch
@@ -506,7 +656,8 @@ function animateLoop(){
 	c.clearRect(0, 0, gameWidth, gameHeight);
 	drawBackground();
 	drawBlocks();
-	ui.drawElements();
+	ui.drawTabOne();
+	game.drawAndUpdateBalls();
 
 	if (blocksAreEmpty()){
 		console.log("Finished board!")
@@ -514,8 +665,7 @@ function animateLoop(){
 		gameBoard.setupBoardArray();
 	}
 	
-	circle.draw();
-	circle.update();
+
 	frameCount = frameCount + 1
 	currentUnixTime = Date.now()
 	if (oldUnixTime + 1000 < currentUnixTime){
@@ -537,7 +687,15 @@ function Main(){
 
 	//Add to gameBoard array
 	gameBoard.setupBoardArray();
-
+	//for (i=0; i<2; i++){
+	//	randPosX = Math.random() * gameWidth
+	//	randPosY = Math.random() * gameHeight
+	//	radius = 15
+	//	velX = Math.random() * 5
+	//	velY = Math.random() * 5
+	//	colour = "#f442f4"
+	//	game.circleArray.push(new NormalBall(randPosX, randPosY, radius, velX, velY, colour))
+	//}
 	ui.setup();
 
 
