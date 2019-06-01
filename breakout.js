@@ -19,21 +19,20 @@ var blockColoursDict = {
 	15:"#ffffff",
 };
 
+//---When adding a new ball---//
+//1. Object
+//2. Shop
+
+
 class Game{
 	constructor(){
 		//Colours
 		this.backgroundColour = "#f4eed7";
 		this.level = 1;
-		this.money = 10000;
+		this.money = 1000;
 		this.clickDamage = 1;
 		this.clickDamageCost = 10;
 		this.circleArray = [];
-
-		//Normal Ball
-		this.normalBallCost = 10;
-		this.normalBallDamage = 1;
-		this.normalBallVel = 2;
-
 
 		//Speed Ball
 		this.speedBallCost = 50;
@@ -62,7 +61,7 @@ class Game{
 			c.fillStyle = circle.colour;
 			c.fill();
 			c.closePath();
-			circle.update();
+			circle.handleBall();
 		}
 	}
 
@@ -124,10 +123,9 @@ function squareClickFunction(){
 }
 
 function buyClickDamage(){
-	console.log("trying to buy click damage")
-	if (game.money >= game.clickDamage){
-		
-		game.money -= game.clickDamage;
+	if (game.money >= game.clickDamageCost){
+		game.clickDamage = game.clickDamage + 1
+		game.money -= game.clickDamageCost;
 	}
 }
 
@@ -135,39 +133,51 @@ function noneText(){
 	return ""
 }
 
-function buyNormalBall(){
-	console.log("trying to buy normal ball")
-	if (game.money >= game.normalBallCost){
-		game.normalBallCost = Math.floor((game.normalBallCost + 3) * 1.1);
-		randPosX = Math.random() * gameWidth
-		randPosY = Math.random() * gameHeight
-		radius = 15
-		//velX = Math.random() * 5
-		//velY = Math.random() * 5
-		colour = "#f442f4"
-		game.circleArray.push(new NormalBall(randPosX, randPosY, radius, game.normalBallVel, game.normalBallVel, colour))
-		game.money -= game.normalBallCost;
+class Shop{
+	constructor(){
+		this.normalBallCost = 10
+		this.speedBallCost = 50
+	}
+
+	getPrice(ballName){
+		if(ballName == "NormalBall"){
+			var cost = this.normalBallCost;
+		}
+		else if(ballName == "SpeedBall"){
+			var cost = this.speedBallCost;
+		}
+		else{
+			console.log("Error getting ballName", ballName);
+			return ["noCost", "noVel"];}
+		return cost;
+	}
+	buyBall(ballName){
+		var cost = this.getPrice(ballName);
+		if (game.money >= cost){
+			console.log("Right cost")
+			if (ballName == "NormalBall"){
+				console.log("got right ballname")
+				this.normalBallCost = Math.floor((this.normalBallCost + 3) * 1.1);
+				game.circleArray.push(new NormalBall())
+			}
+			else if (ballName == "SpeedBall"){
+				this.speedBallCost = Math.floor((this.speedBallCost + 3) * 1.1);
+				game.circleArray.push(new SpeedBall())
+			}
+			game.money -= cost;
+		}
 	}
 }
+shop = new Shop();
 
-function buyNormalBall(){
-	console.log("trying to buy normal ball")
-	if (game.money >= game.normalBallCost){
-		game.normalBallCost = Math.floor((game.normalBallCost + 3) * 1.1);
-		randPosX = Math.random() * gameWidth
-		randPosY = Math.random() * gameHeight
-		radius = 15
-		//velX = Math.random() * 5
-		//velY = Math.random() * 5
-		colour = "#f442f4"
-		game.circleArray.push(new NormalBall(randPosX, randPosY, radius, game.normalBallVel, game.normalBallVel, colour))
-		game.money -= game.normalBallCost;
-	}
+function buttonBuyBall(ballName){
+	shop.buyBall(ballName)
 }
 
-function buyNormalBallText(){
-	return "$" + game.normalBallCost;
+function buttonGetBallPrice(ballName){
+	return "$" + shop.getPrice(ballName);
 }
+
 
 class UIBallElement{
 	constructor(circleX, circleY, circleRadius, colour){
@@ -190,27 +200,25 @@ class UIBallElement{
 }
 
 class UIBuyBallElement{
-	constructor(name, posX, posY, ballColour, onBuyClickFunction, text){
+	constructor(name, posX, posY, ballColour, onBuyClickFunction, params, textFunction, textFunctionParams){
 		this.name = name;
 		this.posX = posX;
 		this.posY = posY;
 		this.ballColour = ballColour;
 		this.onBuyClickFunction = onBuyClickFunction;
-		this.text = text;
+		this.params = params
+		this.text = textFunction;
+		this.textFunctionParams = textFunctionParams;
 	}
 
 	setup(){
 		//Create background
-		var newButton = new ButtonElement("buyNormalBallBg", this.posX, this.posY, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", noneText);
+		var newButton = new ButtonElement("buyNormalBallBg", this.posX, this.posY, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", noneText);
 		ui.elements.push(newButton);
-		var newButton = new ButtonElement("buyNormalBallBuyButton", this.posX, this.posY+80, 80, 30, true, "#F4EED7", true, "#000", this.onBuyClickFunction, true, "18px Oswald", "black", "center", this.text);
+		var newButton = new ButtonElement("buyNormalBallBuyButton", this.posX, this.posY+80, 80, 30, true, "#F4EED7", true, "#000", this.onBuyClickFunction, this.params, true, "18px Oswald", "black", "center", this.text, this.textFunctionParams);
 		ui.elements.push(newButton);
 		var newBall = new UIBallElement(this.posX+40, this.posY+40, 15, this.ballColour);
 		ui.elements.push(newBall);
-	}
-
-	draw(){
-
 	}
 }
 
@@ -220,24 +228,22 @@ class UserInterface{
 	}
 	setup(){
 		//Bottom outline
-		var newButton = new ButtonElement("uiBackground", 0, gameHeight, gameWidth, 200, true, "#c7dbe2", true, "#000", squareClickFunction);
+		var newButton = new ButtonElement("uiBackground", 0, gameHeight, gameWidth, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", getMoney);
+		var newButton = new ButtonElement("moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getMoney);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("clickDamageText", 50, 550, 120, 30, true, "#55D400", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", getClickDamageText);
+		var newButton = new ButtonElement("clickDamageText", 50, 550, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getClickDamageText);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("buyClickDamageButton", 180, 550, 65, 30, true, "#55D400", true, "#000", buyClickDamage, true, "18px Oswald", "white", "right", getBuyClickDamageText);
+		var newButton = new ButtonElement("buyClickDamageButton", 180, 550, 65, 30, true, "#55D400", true, "#000", buyClickDamage, "", true, "18px Oswald", "white", "right", getBuyClickDamageText);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("levelText", 50, 510, 120, 30, true, "#55D400", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", getBuyLevelText);
+		var newButton = new ButtonElement("levelText", 50, 510, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getBuyLevelText);
 		this.elements.push(newButton);
 
 		//---Draw first ball buy button---//
-		//var newButton = new ButtonElement("buyNormalBallBg", 300, 510, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, true, "18px Oswald", "white", "right", noneText);
-		//this.elements.push(newButton);
-		let newUIBallElement = new UIBuyBallElement("NormalBall", 300, 510, "#f442f4", buyNormalBall, buyNormalBallText);
+		var newUIBallElement = new UIBuyBallElement("NormalBall", 300, 510, "#f442f4", buttonBuyBall, "NormalBall", buttonGetBallPrice, "NormalBall");
 		newUIBallElement.setup();
-		let newUIBallElement2 = new UIBuyBallElement("NormalBall", 400, 510, "#fff", buyNormalBall, buyNormalBallText);
-		newUIBallElement2.setup();
+		var newUIBallElement = new UIBuyBallElement("SpeedBall", 400, 510, "#42f4ee", buttonBuyBall, "SpeedBall", buttonGetBallPrice, "SpeedBall");
+		newUIBallElement.setup();
 
 
 
@@ -272,7 +278,7 @@ class UserInterface{
 						var textPosX = element.posX + (element.width / 2);
 						var textPosY = element.posY + (element.height / 1.3);
 					}
-					c.fillText(element.fillTextChar(), textPosX, textPosY);
+					c.fillText(element.fillTextChar(element.textFunctionParams), textPosX, textPosY);
 				}
 			}
 			if (element instanceof TextElement){
@@ -285,7 +291,7 @@ class UserInterface{
 					if(element.textAlign == "right"){
 						let textPosX = element.posX;
 						let textPosY = element.posY;
-					c.fillText(element.fillTextChar(), textPosX, textPosY);
+					c.fillText(element.fillTextChar(element.textFunctionParams), textPosX, textPosY);
 					}
 				}	
 			}
@@ -298,7 +304,7 @@ class UserInterface{
 ui = new UserInterface();
 
 class ButtonElement{
-	constructor(name, posX, posY, width, height, useFill, fillColour, useStroke, strokeColour, runFunction, useText, font, textFillStyle, textAlign, fillTextChar){
+	constructor(name, posX, posY, width, height, useFill, fillColour, useStroke, strokeColour, runFunction, params, useText, font, textFillStyle, textAlign, textFunction, textFunctionParams){
 		this.name = name;
 		this.posX = posX;
 		this.posY = posY;
@@ -309,13 +315,15 @@ class ButtonElement{
 		this.useStroke = useStroke;
 		this.strokeColour = strokeColour;
 		this.runFunction = runFunction;
+		this.params = params;
 
 		//Text
 		this.useText = useText;
 		this.font = font;
 		this.textFillStyle = textFillStyle;
 		this.textAlign = textAlign;
-		this.fillTextChar = fillTextChar;
+		this.fillTextChar = textFunction;
+		this.textFunctionParams = textFunctionParams;
 	}
 }
 
@@ -331,7 +339,6 @@ class TextElement{
 		this.textFillStyle = textFillStyle;
 		this.textAlign = textAlign;
 		this.fillTextChar = fillTextChar;
-		console.log(this.posX);
 	}
 }
 
@@ -364,7 +371,7 @@ class NormalBlock {
 	}
 }
 
-class NormalBall{
+class Ball{
 	constructor(circleX, circleY, circleRadius, velX, velY, colour){
 		this.circleRadius = circleRadius;
 		this.circleX = circleX;
@@ -374,7 +381,12 @@ class NormalBall{
 		this.colour = colour;
 	}
 
-	update(){
+	handleBall(){
+		this.updatePos();
+		this.handleBlockHit();
+	}
+
+	updatePos(){
 		//Movement
 		this.circleX = this.circleX + this.velX;
 		this.circleY = this.circleY + this.velY;
@@ -392,52 +404,128 @@ class NormalBall{
 		if (this.circleY - this.circleRadius < 0){
 			this.velY = Math.abs(this.velY)
 		}
+	}
+}
 
-		//----Check bricks----//
-		for (i=0; i<gameBoard.blockWidth; i++){
-			for (j=0; j<gameBoard.blockHeight; j++){
-				arrayLoc = i + j*gameBoard.blockWidth;
-				let block = gameBoard.gameArray[arrayLoc];
-				if (!(block instanceof EmptyBlock)){
-					//Circle
-					var rect1Left = this.circleX - this.circleRadius;
-					var rect1Right = this.circleX + this.circleRadius;
-					var rect1Top = this.circleY - this.circleRadius;
-					var rect1Bottom = this.circleY + this.circleRadius;
+class NormalBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth
+		let posY = Math.random() * gameHeight
+		let radius = 15
+		let velX = 1
+		let velY = 1
+		let colour = "#f442f4"
+		super(posX, posY, radius, velX,velY, colour);
+		this.damage = 1;
+		this.circleRadius = radius
+		this.velX = velX
+		this.velY = velY
+		this.colour = colour
+	}
 
-					var rect2Left = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
-					var rect2Top = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
-					var rect2Right = rect2Left + gameBoard.blockPixelWidth;
-					var rect2Bottom = rect2Top + gameBoard.blockPixelHeight;
-					var isTouchingBlock = rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Top, rect2Right, rect2Bottom)
-					//console.log(isTouchingBlock)
-					//Damage block
-					if(isTouchingBlock != null){
-						damageBlock(block, game.normalBallDamage);
-					}
-					if (isTouchingBlock == "leftTouching"){
-						this.velX = Math.abs(this.velX);
-						this.circleX += 5;
-					} 
-					if (isTouchingBlock == "rightTouching"){
-						this.velX = -Math.abs(this.velX);
-						this.circleX -= 5;
-					} 
-					if (isTouchingBlock == "topTouching"){
-						//Positive
-						this.velY = Math.abs(this.velY);
-						this.circleY += 5;
-					} 
-					if (isTouchingBlock == "bottomTouching"){
-						//Negative
-						this.velY = -Math.abs(this.velY);
-						this.circleY -= 5;
-					}
+	handleBlockHit(){
+		//Damage block
+		var result = checkTouchingSideAndBrick(this)
+		var isTouchingBlock = result[0];
+		var block = result[1];
+		//console.log(result)
+		if(isTouchingBlock != false){
+			damageBlock(block, this.damage);
+		}
+		if (isTouchingBlock == "leftTouching"){
+			this.velX = Math.abs(this.velX);
+			this.circleX += 5;
+		} 
+		if (isTouchingBlock == "rightTouching"){
+			this.velX = -Math.abs(this.velX);
+			this.circleX -= 5;
+		} 
+		if (isTouchingBlock == "topTouching"){
+			//Positive
+			this.velY = Math.abs(this.velY);
+			this.circleY += 5;
+		} 
+		if (isTouchingBlock == "bottomTouching"){
+			//Negative
+			this.velY = -Math.abs(this.velY);
+			this.circleY -= 5;
+		}
+	}
+}
 
+class SpeedBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth
+		let posY = Math.random() * gameHeight
+		let radius = 15
+		let velX = 2
+		let velY = 2
+		let colour = "#42f4ee"
+		super(posX, posY, radius, velX,velY, colour);
+		this.damage = 1;
+		this.circleRadius = radius
+		this.velX = velX
+		this.velY = velY
+		this.colour = colour
+	}
+
+	handleBlockHit(){
+		//Damage block
+		var result = checkTouchingSideAndBrick(this)
+		var isTouchingBlock = result[0];
+		var block = result[1];
+		//console.log(result)
+		if(isTouchingBlock != false){
+			damageBlock(block, this.damage);
+		}
+		if (isTouchingBlock == "leftTouching"){
+			this.velX = Math.abs(this.velX);
+			this.circleX += 5;
+		} 
+		if (isTouchingBlock == "rightTouching"){
+			this.velX = -Math.abs(this.velX);
+			this.circleX -= 5;
+		} 
+		if (isTouchingBlock == "topTouching"){
+			//Positive
+			this.velY = Math.abs(this.velY);
+			this.circleY += 5;
+		} 
+		if (isTouchingBlock == "bottomTouching"){
+			//Negative
+			this.velY = -Math.abs(this.velY);
+			this.circleY -= 5;
+		}
+	}
+}
+
+function checkTouchingSideAndBrick(ball){
+	//----Check bricks----//
+	for (i=0; i<gameBoard.blockWidth; i++){
+		for (j=0; j<gameBoard.blockHeight; j++){
+			arrayLoc = i + j*gameBoard.blockWidth;
+			let block = gameBoard.gameArray[arrayLoc];
+			if (!(block instanceof EmptyBlock)){
+				//Circle
+				var rect1Left = ball.circleX - ball.circleRadius;
+				var rect1Right = ball.circleX + ball.circleRadius;
+				var rect1Top = ball.circleY - ball.circleRadius;
+				var rect1Bottom = ball.circleY + ball.circleRadius;
+
+				var rect2Left = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
+				var rect2Top = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
+				var rect2Right = rect2Left + gameBoard.blockPixelWidth;
+				var rect2Bottom = rect2Top + gameBoard.blockPixelHeight;
+				var isTouchingBlock = rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Left, rect2Top, rect2Right, rect2Bottom)
+				if (isTouchingBlock == "noneTouching"){
+				}
+				else{
+					return [isTouchingBlock, block];
 				}
 			}
 		}
 	}
+	return [false, null];
 }
 
 class PlayerMouse{
@@ -486,7 +574,7 @@ function handleLeftClick(posX, posY){
 			isTouchingElement= mouseTouchingRect(element.posX, element.posY, element.width, element.height)
 			if (isTouchingElement){
 				console.log("Touching element", element.name)
-				element.runFunction();
+				element.runFunction(element.params);
 			}
 		}		
 	}
@@ -574,6 +662,7 @@ function rectTouchingRect(rect1Left, rect1Right, rect1Top, rect1Bottom, rect2Lef
 	if (rightTouching && topTouching || rightTouching && bottomTouching){
 		return ("rightTouching");
 	}
+	return ("noneTouching")
 }
 
 CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
