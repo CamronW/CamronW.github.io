@@ -29,7 +29,7 @@ class Game{
 		//Colours
 		this.backgroundColour = "#f4eed7";
 		this.level = 1;
-		this.money = 0;
+		this.money = 1000;
 		this.clickDamage = 1;
 		this.clickDamageCost = 10;
 		this.circleArray = [];
@@ -131,12 +131,19 @@ function noneText(){
 
 class Shop{
 	constructor(){
+		//Normal Ball
 		this.normalBallCost = 10
 		this.normalBallSpeed = 1
 		this.normalBallSpeedCost = 20
 		this.normalBallDamage = 1
 		this.normalBallDamageCost = 20
+
+		//Speed Ball
 		this.speedBallCost = 50
+		this.speedBallSpeed = 3
+		this.speedBallSpeedCost = 50
+		this.speedBallDamage = 1
+		this.speedBallDamageCost = 50
 	}
 
 	getPrice(ballName){
@@ -156,7 +163,6 @@ class Shop{
 		if (game.money >= cost){
 			console.log("Right cost")
 			if (ballName == "NormalBall"){
-				console.log("got right ballname")
 				this.normalBallCost = Math.floor((this.normalBallCost + 3) * 1.1);
 				game.circleArray.push(new NormalBall())
 			}
@@ -181,6 +187,16 @@ class Shop{
 				updateBalls("NormalBall", "damage", 1)
 			}
 		}
+		if (name == "SpeedBall"){
+			if (stat == "speed"){
+				this.speedBallSpeed = this.speedBallSpeed + 1;
+				updateBalls("SpeedBall", "speed", 1)
+			}
+			if (stat == "damage"){
+				this.speedBallDamage = this.speedBallDamage + 1;
+				updateBalls("SpeedBall", "damage", 1)
+			}
+		}
 	}
 }
 shop = new Shop();
@@ -193,7 +209,7 @@ function updateBalls(ballName, stat, amount){
 	var editBall;
 	for (var i=0; i<game.circleArray.length; i++){
 		ball = game.circleArray[i];
-		if(ball.constructor.name == "NormalBall"){
+		if(ball.constructor.name == ballName){
 			if(stat == "speed"){
 				ball.speed = ball.speed + amount;
 			}
@@ -218,6 +234,14 @@ function getNormalSpeedUpgradeText(){
 
 function getNormalDamageUpgradeText(){
 	return "+1 Dmg ($" + shop.normalBallDamageCost + ") (" + shop.normalBallDamage + ")"
+}
+
+function getSpeedSpeedUpgradeText(){
+	return "+1 Speed ($" + shop.speedBallSpeedCost + ") (" + shop.speedBallSpeed + ")"
+}
+
+function getSpeedDamageUpgradeText(){
+	return "+1 Dmg ($" + shop.speedBallDamageCost + ") (" + shop.speedBallDamage + ")"
 }
 
 function getTabOneText(){
@@ -305,13 +329,24 @@ class UserInterface{
 		newUIBallElement.setup();
 
 		//---Upgrade Buttons (tab 2)---//
+		//Normal Ball
 		var columnX = 260
 		var columnY = 520
-		var newBall = new UIBallElement(2, columnX + 70, columnY + 20, 15, "#f442f4");
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#f442f4");
 		this.elements.push(newBall);
-		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "speed"], true, "18px Oswald", "white", "center", getNormalSpeedUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeNormalBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "speed"], true, "18px Oswald", "white", "center", getNormalSpeedUpgradeText);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "damage"], true, "18px Oswald", "white", "center", getNormalDamageUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeNormalBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "damage"], true, "18px Oswald", "white", "center", getNormalDamageUpgradeText);
+		this.elements.push(newButton);
+
+		//Speed Ball
+		var columnX = 460
+		var columnY = 520
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#42f4ee");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "speed"], true, "18px Oswald", "white", "center", getSpeedSpeedUpgradeText);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "damage"], true, "18px Oswald", "white", "center", getSpeedDamageUpgradeText);
 		this.elements.push(newButton);
 
 
@@ -460,13 +495,14 @@ class NormalBlock {
 
 
 
+var randomVelList = [-1,1]
 class Ball{
 	constructor(circleX, circleY, circleRadius, colour, speed){
 		this.circleRadius = circleRadius;
 		this.circleX = circleX;
 		this.circleY = circleY;
-		this.velX = Math.random() * 2;
-		this.velY = Math.random() * 2;
+		this.velX = randomVelList[Math.floor(Math.random()*randomVelList.length)];
+		this.velY = randomVelList[Math.floor(Math.random()*randomVelList.length)];
 		this.speed = speed;
 		this.colour = colour;
 	}
@@ -515,26 +551,27 @@ class NormalBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		//console.log(result)
+		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
 			damageBlock(block, this.damage);
 		}
 		if (isTouchingBlock == "leftTouching"){
-			this.velX = Math.abs(this.velX);
+			this.velX = Math.abs(this.velX) * randPercent;
 			this.circleX += 5;
 		} 
 		if (isTouchingBlock == "rightTouching"){
-			this.velX = -Math.abs(this.velX);
+			this.velX = -Math.abs(this.velX) * randPercent;
 			this.circleX -= 5;
 		} 
 		if (isTouchingBlock == "topTouching"){
 			//Positive
-			this.velY = Math.abs(this.velY);
+			this.velY = Math.abs(this.velY) * randPercent;
 			this.circleY += 5;
 		} 
 		if (isTouchingBlock == "bottomTouching"){
 			//Negative
-			this.velY = -Math.abs(this.velY);
+			this.velY = -Math.abs(this.velY) * randPercent;
 			this.circleY -= 5;
 		}
 	}
@@ -545,15 +582,13 @@ class SpeedBall extends Ball{
 		let posX = Math.random() * gameWidth
 		let posY = Math.random() * gameHeight
 		let radius = 15
-		let velX = 2
-		let velY = 2
 		let colour = "#42f4ee"
-		super(posX, posY, radius, velX,velY, colour);
-		this.damage = 1;
+		let speed = shop.speedBallSpeed;
+		super(posX, posY, radius, colour, speed);
+		this.damage = shop.speedBallDamage;
 		this.circleRadius = radius
-		this.velX = velX
-		this.velY = velY
 		this.colour = colour
+		
 	}
 
 	handleBlockHit(){
@@ -561,26 +596,27 @@ class SpeedBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		//console.log(result)
+		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
 			damageBlock(block, this.damage);
 		}
 		if (isTouchingBlock == "leftTouching"){
-			this.velX = Math.abs(this.velX);
+			this.velX = Math.abs(this.velX) * randPercent;
 			this.circleX += 5;
 		} 
 		if (isTouchingBlock == "rightTouching"){
-			this.velX = -Math.abs(this.velX);
+			this.velX = -Math.abs(this.velX) * randPercent;
 			this.circleX -= 5;
 		} 
 		if (isTouchingBlock == "topTouching"){
 			//Positive
-			this.velY = Math.abs(this.velY);
+			this.velY = Math.abs(this.velY) * randPercent;
 			this.circleY += 5;
 		} 
 		if (isTouchingBlock == "bottomTouching"){
 			//Negative
-			this.velY = -Math.abs(this.velY);
+			this.velY = -Math.abs(this.velY) * randPercent;
 			this.circleY -= 5;
 		}
 	}
@@ -661,7 +697,10 @@ function handleLeftClick(posX, posY){
 			isTouchingElement= mouseTouchingRect(element.posX, element.posY, element.width, element.height)
 			if (isTouchingElement){
 				console.log("Touching element", element.name)
-				element.runFunction(element.params);
+				if (ui.currentTab == element.tab || element.tab == 0){ 
+					element.runFunction(element.params);
+				}
+
 			}
 		}		
 	}
