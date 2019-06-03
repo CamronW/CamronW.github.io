@@ -29,7 +29,7 @@ class Game{
 		//Colours
 		this.backgroundColour = "#f4eed7";
 		this.level = 1;
-		this.money = 1000;
+		this.money = 0;
 		this.clickDamage = 1;
 		this.clickDamageCost = 10;
 		this.circleArray = [];
