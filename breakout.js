@@ -34,10 +34,6 @@ class Game{
 		this.clickDamageCost = 10;
 		this.circleArray = [];
 
-		//Speed Ball
-		this.speedBallCost = 50;
-		this.speedBallDamage = 1;
-		this.speedBallVel = 2;
 	}
 	getMoney(){
 		return this.money;
@@ -136,6 +132,10 @@ function noneText(){
 class Shop{
 	constructor(){
 		this.normalBallCost = 10
+		this.normalBallSpeed = 1
+		this.normalBallSpeedCost = 20
+		this.normalBallDamage = 1
+		this.normalBallDamageCost = 20
 		this.speedBallCost = 50
 	}
 
@@ -167,8 +167,42 @@ class Shop{
 			game.money -= cost;
 		}
 	}
+	upgrade(nameStatArray){
+		var name = nameStatArray[0];
+		var stat = nameStatArray[1];
+		console.log(name, stat)
+		if (name == "NormalBall"){
+			if (stat == "speed"){
+				this.normalBallSpeed = this.normalBallSpeed + 1;
+				updateBalls("NormalBall", "speed", 1)
+			}
+			if (stat == "damage"){
+				this.normalBallDamage = this.normalBallDamage + 1;
+				updateBalls("NormalBall", "damage", 1)
+			}
+		}
+	}
 }
 shop = new Shop();
+
+function shopupgrade(nameStatArray){
+	shop.upgrade(nameStatArray);
+}
+
+function updateBalls(ballName, stat, amount){
+	var editBall;
+	for (var i=0; i<game.circleArray.length; i++){
+		ball = game.circleArray[i];
+		if(ball.constructor.name == "NormalBall"){
+			if(stat == "speed"){
+				ball.speed = ball.speed + amount;
+			}
+			if(stat == "damage"){
+				ball.damage = ball.damage + amount;
+			}
+		}
+	}
+}
 
 function buttonBuyBall(ballName){
 	shop.buyBall(ballName)
@@ -178,9 +212,24 @@ function buttonGetBallPrice(ballName){
 	return "$" + shop.getPrice(ballName);
 }
 
+function getNormalSpeedUpgradeText(){
+	return "+1 Speed ($" + shop.normalBallSpeedCost + ") (" + shop.normalBallSpeed + ")"
+}
+
+function getNormalDamageUpgradeText(){
+	return "+1 Dmg ($" + shop.normalBallDamageCost + ") (" + shop.normalBallDamage + ")"
+}
+
+function getTabOneText(){
+	return "Main";
+}
+function getTabTwoText(){
+	return "Upgrades";
+}
 
 class UIBallElement{
-	constructor(circleX, circleY, circleRadius, colour){
+	constructor(tab, circleX, circleY, circleRadius, colour){
+		this.tab = tab;
 		this.circleX = circleX;
 		this.circleY = circleY;
 		this.circleRadius = circleRadius;
@@ -200,7 +249,8 @@ class UIBallElement{
 }
 
 class UIBuyBallElement{
-	constructor(name, posX, posY, ballColour, onBuyClickFunction, params, textFunction, textFunctionParams){
+	constructor(tab, name, posX, posY, ballColour, onBuyClickFunction, params, textFunction, textFunctionParams){
+		this.tab = tab;
 		this.name = name;
 		this.posX = posX;
 		this.posY = posY;
@@ -213,98 +263,131 @@ class UIBuyBallElement{
 
 	setup(){
 		//Create background
-		var newButton = new ButtonElement("buyNormalBallBg", this.posX, this.posY, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", noneText);
+		var newButton = new ButtonElement(this.tab, "buyNormalBallBg", this.posX, this.posY, 80, 80, true, "#F4EED7", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", noneText);
 		ui.elements.push(newButton);
-		var newButton = new ButtonElement("buyNormalBallBuyButton", this.posX, this.posY+80, 80, 30, true, "#F4EED7", true, "#000", this.onBuyClickFunction, this.params, true, "18px Oswald", "black", "center", this.text, this.textFunctionParams);
+		var newButton = new ButtonElement(this.tab,"buyNormalBallBuyButton", this.posX, this.posY+80, 80, 30, true, "#F4EED7", true, "#000", this.onBuyClickFunction, this.params, true, "18px Oswald", "black", "center", this.text, this.textFunctionParams);
 		ui.elements.push(newButton);
-		var newBall = new UIBallElement(this.posX+40, this.posY+40, 15, this.ballColour);
+		var newBall = new UIBallElement(this.tab, this.posX+40, this.posY+40, 15, this.ballColour);
 		ui.elements.push(newBall);
+		var newText = new TextElement(this.tab, this.name, this.posX+40, this.posY+135, true, "20px Oswald", "black", "center", this.name.replace("Ball",""))
+		ui.elements.push(newText);
 	}
 }
 
 class UserInterface{
 	constructor(){
 		this.elements = [];
+		this.currentTab = 1;
 	}
 	setup(){
 		//Bottom outline
-		var newButton = new ButtonElement("uiBackground", 0, gameHeight, gameWidth, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
+		var newButton = new ButtonElement(0, "uiBackground", 0, gameHeight, gameWidth, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getMoney);
+		var newButton = new ButtonElement(0, "moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getMoney);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("clickDamageText", 50, 550, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getClickDamageText);
+		var newButton = new ButtonElement(0, "clickDamageText", 50, 550, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getClickDamageText);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("buyClickDamageButton", 180, 550, 65, 30, true, "#55D400", true, "#000", buyClickDamage, "", true, "18px Oswald", "white", "right", getBuyClickDamageText);
+		var newButton = new ButtonElement(0, "buyClickDamageButton", 180, 550, 65, 30, true, "#55D400", true, "#000", buyClickDamage, "", true, "18px Oswald", "white", "right", getBuyClickDamageText);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement("levelText", 50, 510, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getBuyLevelText);
+		var newButton = new ButtonElement(0, "levelText", 50, 510, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getBuyLevelText);
+		this.elements.push(newButton);
+
+		//Tab buttons
+		var newButton = new ButtonElement(0, "tabOne", 50, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 1, true, "18px Oswald", "white", "center", getTabOneText);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(0, "tabTwo", 170, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 2, true, "18px Oswald", "white", "center", getTabTwoText);
 		this.elements.push(newButton);
 
 		//---Draw first ball buy button---//
-		var newUIBallElement = new UIBuyBallElement("NormalBall", 300, 510, "#f442f4", buttonBuyBall, "NormalBall", buttonGetBallPrice, "NormalBall");
+		var newUIBallElement = new UIBuyBallElement(1, "NormalBall", 300, 510, "#f442f4", buttonBuyBall, "NormalBall", buttonGetBallPrice, "NormalBall");
 		newUIBallElement.setup();
-		var newUIBallElement = new UIBuyBallElement("SpeedBall", 400, 510, "#42f4ee", buttonBuyBall, "SpeedBall", buttonGetBallPrice, "SpeedBall");
+		var newUIBallElement = new UIBuyBallElement(1, "SpeedBall", 400, 510, "#42f4ee", buttonBuyBall, "SpeedBall", buttonGetBallPrice, "SpeedBall");
 		newUIBallElement.setup();
 
-
+		//---Upgrade Buttons (tab 2)---//
+		var columnX = 260
+		var columnY = 520
+		var newBall = new UIBallElement(2, columnX + 70, columnY + 20, 15, "#f442f4");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "speed"], true, "18px Oswald", "white", "center", getNormalSpeedUpgradeText);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "damage"], true, "18px Oswald", "white", "center", getNormalDamageUpgradeText);
+		this.elements.push(newButton);
 
 
 	}
 	drawTabOne(){
 		for (i=0; i<this.elements.length; i++){
 			let element = this.elements[i];
-			if (element instanceof ButtonElement){
-				//Draw the rect
-				c.beginPath();
-				c.fillStyle = element.fillColour;
-				c.rect(element.posX, element.posY, element.width, element.height);
-				c.strokeStyle = element.strokeColour;
-				if (element.useFill){c.fill()}
-				if (element.useStroke){c.lineWidth=2; c.stroke()};
+			if (element.tab == this.currentTab || element.tab == 0){
+				if (element instanceof ButtonElement){
+					//Draw the rect
+					c.beginPath();
+					c.fillStyle = element.fillColour;
+					c.rect(element.posX, element.posY, element.width, element.height);
+					c.strokeStyle = element.strokeColour;
+					if (element.useFill){c.fill()}
+					if (element.useStroke){c.lineWidth=2; c.stroke()};
 
-				//Draw the text
-				c.font = element.font;
-				c.fillStyle = element.textFillStyle;
-				c.textAlign = element.textAlign;
-				if (element.useText){
-					if(element.textAlign == "right"){
-						var textPosX = element.posX + element.width - 5;
-						var textPosY = element.posY + (element.height / 1.3);
+					//Draw the text
+					c.font = element.font;
+					c.fillStyle = element.textFillStyle;
+					c.textAlign = element.textAlign;
+					if (element.useText){
+						if(element.textAlign == "right"){
+							var textPosX = element.posX + element.width - 5;
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						if(element.textAlign == "left"){
+							var textPosX = element.posX + 5;
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						if(element.textAlign == "center"){
+							var textPosX = element.posX + (element.width / 2);
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						c.fillText(element.fillTextChar(element.textFunctionParams), textPosX, textPosY);
 					}
-					if(element.textAlign == "left"){
-						var textPosX = element.posX + 5;
-						var textPosY = element.posY + (element.height / 1.3);
-					}
-					if(element.textAlign == "center"){
-						var textPosX = element.posX + (element.width / 2);
-						var textPosY = element.posY + (element.height / 1.3);
-					}
-					c.fillText(element.fillTextChar(element.textFunctionParams), textPosX, textPosY);
 				}
-			}
-			if (element instanceof TextElement){
-				c.beginPath()
-				//Draw the text
-				c.font = element.font;
-				c.fillStyle = element.textFillStyle;
-				c.textAlign = element.textAlign;
-				if (element.useText){
-					if(element.textAlign == "right"){
-						let textPosX = element.posX;
-						let textPosY = element.posY;
-					c.fillText(element.fillTextChar(element.textFunctionParams), textPosX, textPosY);
-					}
-				}	
-			}
-			if (element instanceof UIBallElement){
-				element.draw();
+				if (element instanceof TextElement){
+					c.beginPath()
+					//Draw the text
+					c.font = element.font;
+					c.fillStyle = element.textFillStyle;
+					c.textAlign = element.textAlign;
+					if (element.useText){
+						if(element.textAlign == "right"){
+							var textPosX = element.posX + element.width - 5;
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						if(element.textAlign == "left"){
+							var textPosX = element.posX + 5;
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						if(element.textAlign == "center"){
+							var textPosX = element.posX + (element.width / 2);
+							var textPosY = element.posY + (element.height / 1.3);
+						}
+						//console.log(textPosX, textPosY)
+						c.fillText(element.fillTextChar, textPosX, element.posY);
+					}	
+				}
+				if (element instanceof UIBallElement){
+					element.draw();
+				}
 			}
 		}
 	}
 }
 ui = new UserInterface();
 
+function setTab(tab){
+	ui.currentTab = tab;
+}
+
 class ButtonElement{
-	constructor(name, posX, posY, width, height, useFill, fillColour, useStroke, strokeColour, runFunction, params, useText, font, textFillStyle, textAlign, textFunction, textFunctionParams){
+	constructor(tab, name, posX, posY, width, height, useFill, fillColour, useStroke, strokeColour, runFunction, params, useText, font, textFillStyle, textAlign, textFunction, textFunctionParams){
+		this.tab = tab;
 		this.name = name;
 		this.posX = posX;
 		this.posY = posY;
@@ -328,10 +411,13 @@ class ButtonElement{
 }
 
 class TextElement{
-	constructor(name, posX, posY, useText, font, textFillStyle, textAlign, fillTextChar){
+	constructor(tab, name, posX, posY, useText, font, textFillStyle, textAlign, fillTextChar){
+		this.tab = tab;
 		this.name = name;
 		this.posX = posX;
 		this.posY = posY;
+		this.width = fillTextChar.length;
+		this.height = 10
 
 		//Text
 		this.useText = useText;
@@ -371,13 +457,17 @@ class NormalBlock {
 	}
 }
 
+
+
+
 class Ball{
-	constructor(circleX, circleY, circleRadius, velX, velY, colour){
+	constructor(circleX, circleY, circleRadius, colour, speed){
 		this.circleRadius = circleRadius;
 		this.circleX = circleX;
 		this.circleY = circleY;
-		this.velX = velX;
-		this.velY = velY;
+		this.velX = Math.random() * 2;
+		this.velY = Math.random() * 2;
+		this.speed = speed;
 		this.colour = colour;
 	}
 
@@ -388,8 +478,8 @@ class Ball{
 
 	updatePos(){
 		//Movement
-		this.circleX = this.circleX + this.velX;
-		this.circleY = this.circleY + this.velY;
+		this.circleX = this.circleX + (this.velX * this.speed);
+		this.circleY = this.circleY + (this.velY * this.speed);
 
 		//----Check edges of game----//
 		if (this.circleX + this.circleRadius >= gameWidth){
@@ -412,14 +502,11 @@ class NormalBall extends Ball{
 		let posX = Math.random() * gameWidth
 		let posY = Math.random() * gameHeight
 		let radius = 15
-		let velX = 1
-		let velY = 1
 		let colour = "#f442f4"
-		super(posX, posY, radius, velX,velY, colour);
-		this.damage = 1;
+		let speed = shop.normalBallSpeed;
+		super(posX, posY, radius, colour, speed);
+		this.damage = shop.normalBallDamage;
 		this.circleRadius = radius
-		this.velX = velX
-		this.velY = velY
 		this.colour = colour
 	}
 
