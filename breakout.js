@@ -131,71 +131,108 @@ function noneText(){
 
 class Shop{
 	constructor(){
-		//Normal Ball
-		this.normalBallCost = 10
-		this.normalBallSpeed = 1
-		this.normalBallSpeedCost = 20
-		this.normalBallDamage = 1
-		this.normalBallDamageCost = 20
-
-		//Speed Ball
-		this.speedBallCost = 50
-		this.speedBallSpeed = 3
-		this.speedBallSpeedCost = 50
-		this.speedBallDamage = 1
-		this.speedBallDamageCost = 50
+		this.ballUpgrades = 
+		{
+		  "MainBall": {
+		    "Speed": {
+		      "Amount": 1,
+		      "Cost": 20
+		    },
+		    "Damage": {
+		      "Amount": 1,
+		      "Cost": 20
+		    },
+		    "Size": {
+		      "Amount": 15,
+		      "Cost": 20
+		    }
+		  },
+		  "NormalBall": {
+		  	"ballPrice": 20,
+		    "Speed": {
+		      "Amount": 1,
+		      "Cost": 20
+		    },
+		    "Damage": {
+		      "Amount": 1,
+		      "Cost": 20
+		    }
+		  },
+		  "SpeedBall": {
+		  	"ballPrice": 50,
+		    "Speed": {
+		      "Amount": 3,
+		      "Cost": 50
+		    },
+		    "Damage": {
+		      "Amount": 1,
+		      "Cost": 50
+		    }
+		  },
+		  "BombBall": {
+		  	"ballPrice": 100,
+		    "Damage": {
+		      "Amount": 1,
+		      "Cost": 500
+		    },
+		    "Range": {
+		      "Amount": 1,
+		      "Cost": 50
+		    }
+		  },
+		  "SniperBall": {
+		  	"ballPrice": 100,
+		    "Damage": {
+		      "Amount": 1,
+		      "Cost": 500
+		    },
+		    "Speed": {
+		      "Amount": 2,
+		      "Cost": 50
+		    }
+		  }
+		}
 	}
 
+
+	getStatAmount(ballName, stat){
+		return shop.ballUpgrades[ballName][stat]["Amount"];
+	}
 	getPrice(ballName){
-		if(ballName == "NormalBall"){
-			var cost = this.normalBallCost;
-		}
-		else if(ballName == "SpeedBall"){
-			var cost = this.speedBallCost;
-		}
-		else{
-			console.log("Error getting ballName", ballName);
-			return ["noCost", "noVel"];}
+		var cost = this.ballUpgrades[ballName]["ballPrice"]
 		return cost;
 	}
 	buyBall(ballName){
 		var cost = this.getPrice(ballName);
+		console.log("Cost:", cost)
 		if (game.money >= cost){
+			game.money -= cost;
+			this.ballUpgrades[ballName]["ballPrice"] = Math.floor((this.ballUpgrades[ballName]["ballPrice"] + 3) * 1.1);
 			console.log("Right cost")
 			if (ballName == "NormalBall"){
-				this.normalBallCost = Math.floor((this.normalBallCost + 3) * 1.1);
 				game.circleArray.push(new NormalBall())
 			}
 			else if (ballName == "SpeedBall"){
-				this.speedBallCost = Math.floor((this.speedBallCost + 3) * 1.1);
 				game.circleArray.push(new SpeedBall())
 			}
-			game.money -= cost;
+			else if (ballName == "BombBall"){
+				game.circleArray.push(new BombBall())
+			}
+			else if (ballName == "SniperBall"){
+				game.circleArray.push(new SniperBall())
+			}
 		}
 	}
 	upgrade(nameStatArray){
 		var name = nameStatArray[0];
 		var stat = nameStatArray[1];
-		console.log(name, stat)
-		if (name == "NormalBall"){
-			if (stat == "speed"){
-				this.normalBallSpeed = this.normalBallSpeed + 1;
-				updateBalls("NormalBall", "speed", 1)
-			}
-			if (stat == "damage"){
-				this.normalBallDamage = this.normalBallDamage + 1;
-				updateBalls("NormalBall", "damage", 1)
-			}
-		}
-		if (name == "SpeedBall"){
-			if (stat == "speed"){
-				this.speedBallSpeed = this.speedBallSpeed + 1;
-				updateBalls("SpeedBall", "speed", 1)
-			}
-			if (stat == "damage"){
-				this.speedBallDamage = this.speedBallDamage + 1;
-				updateBalls("SpeedBall", "damage", 1)
-			}
+		var amount = nameStatArray[2];
+		console.log(name, stat, amount)
+		if(game.money > this.ballUpgrades[name][stat]["Cost"]){
+			game.money -= this.ballUpgrades[name][stat]["Cost"];
+			this.ballUpgrades[name][stat]["Amount"] = Math.round((this.ballUpgrades[name][stat]["Amount"] + amount) * 10) / 10;
+			this.ballUpgrades[name][stat]["Cost"] = Math.round(this.ballUpgrades[name][stat]["Cost"] * 1.25);
+			updateBalls(name, stat)
 		}
 	}
 }
@@ -205,17 +242,12 @@ function shopupgrade(nameStatArray){
 	shop.upgrade(nameStatArray);
 }
 
-function updateBalls(ballName, stat, amount){
-	var editBall;
+function updateBalls(ballName, stat){
 	for (var i=0; i<game.circleArray.length; i++){
 		ball = game.circleArray[i];
 		if(ball.constructor.name == ballName){
-			if(stat == "speed"){
-				ball.speed = ball.speed + amount;
-			}
-			if(stat == "damage"){
-				ball.damage = ball.damage + amount;
-			}
+			ball.updateStat(ballName, stat)
+			//shop.ballUpgrades[ballName][stat][amount] = shop.ballUpgrades[ballName][stat][amount] + amount;
 		}
 	}
 }
@@ -228,20 +260,10 @@ function buttonGetBallPrice(ballName){
 	return "$" + shop.getPrice(ballName);
 }
 
-function getNormalSpeedUpgradeText(){
-	return "+1 Speed ($" + shop.normalBallSpeedCost + ") (" + shop.normalBallSpeed + ")"
-}
-
-function getNormalDamageUpgradeText(){
-	return "+1 Dmg ($" + shop.normalBallDamageCost + ") (" + shop.normalBallDamage + ")"
-}
-
-function getSpeedSpeedUpgradeText(){
-	return "+1 Speed ($" + shop.speedBallSpeedCost + ") (" + shop.speedBallSpeed + ")"
-}
-
-function getSpeedDamageUpgradeText(){
-	return "+1 Dmg ($" + shop.speedBallDamageCost + ") (" + shop.speedBallDamage + ")"
+function getUpgradeText(ballNameStatArray){
+	let ballName = ballNameStatArray[0];
+	let stat = ballNameStatArray[1]; 
+	return stat + ": " +shop.ballUpgrades[ballName][stat]["Amount"] + " ($" + shop.ballUpgrades[ballName][stat]["Cost"] + ")";
 }
 
 function getTabOneText(){
@@ -249,6 +271,14 @@ function getTabOneText(){
 }
 function getTabTwoText(){
 	return "Upgrades";
+}
+
+function getTabThreeText(){
+	return "Main Ball";
+}
+
+function getBlockedText(level){
+	return "Locked lv. " + level
 }
 
 class UIBallElement{
@@ -321,32 +351,81 @@ class UserInterface{
 		this.elements.push(newButton);
 		var newButton = new ButtonElement(0, "tabTwo", 170, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 2, true, "18px Oswald", "white", "center", getTabTwoText);
 		this.elements.push(newButton);
+		var newButton = new ButtonElement(0, "tabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "white", "center", getTabThreeText);
+		this.elements.push(newButton);
 
+		//Blocked tab buttons
+		var newButton = new ButtonElement(0, "blockedTabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "gray", "center", getBlockedText, 5);
+		this.elements.push(newButton);
+
+		//--------------Main Tab One--------------//
 		//---Draw first ball buy button---//
 		var newUIBallElement = new UIBuyBallElement(1, "NormalBall", 300, 510, "#f442f4", buttonBuyBall, "NormalBall", buttonGetBallPrice, "NormalBall");
 		newUIBallElement.setup();
 		var newUIBallElement = new UIBuyBallElement(1, "SpeedBall", 400, 510, "#42f4ee", buttonBuyBall, "SpeedBall", buttonGetBallPrice, "SpeedBall");
 		newUIBallElement.setup();
+		var newUIBallElement = new UIBuyBallElement(1, "BombBall", 500, 510, "#000000", buttonBuyBall, "BombBall", buttonGetBallPrice, "BombBall");
+		newUIBallElement.setup();
+		var newUIBallElement = new UIBuyBallElement(1, "SniperBall", 600, 510, "#dddddd", buttonBuyBall, "SniperBall", buttonGetBallPrice, "SniperBall");
+		newUIBallElement.setup();
 
-		//---Upgrade Buttons (tab 2)---//
+		//--------------Ugrades Tab Two--------------//
 		//Normal Ball
 		var columnX = 260
 		var columnY = 520
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#f442f4");
 		this.elements.push(newBall);
-		var newButton = new ButtonElement(2, "upgradeNormalBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "speed"], true, "18px Oswald", "white", "center", getNormalSpeedUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeNormalBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "Speed", 0.1], true, "18px Oswald", "white", "center", getUpgradeText, ["NormalBall", "Speed"]);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(2, "upgradeNormalBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "damage"], true, "18px Oswald", "white", "center", getNormalDamageUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeNormalBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["NormalBall", "Damage"]);
 		this.elements.push(newButton);
 
 		//Speed Ball
-		var columnX = 460
+		var columnX = 420
 		var columnY = 520
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#42f4ee");
 		this.elements.push(newBall);
-		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "speed"], true, "18px Oswald", "white", "center", getSpeedSpeedUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "Speed", 0.3], true, "18px Oswald", "white", "center", getUpgradeText, ["SpeedBall", "Speed"]);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "damage"], true, "18px Oswald", "white", "center", getSpeedDamageUpgradeText);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SpeedBall", "Damage"]);
+		this.elements.push(newButton);
+
+		//Bomb Ball
+		var columnX = 580
+		var columnY = 520
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#000");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeBombBallDamage", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["BombBall", "Damage", 3], true, "18px Oswald", "white", "center", getUpgradeText, ["BombBall", "Damage"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeBombBallRange", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["BombBall", "Range", 0.1], true, "18px Oswald", "white", "center", getUpgradeText, ["BombBall", "Range"]);
+		this.elements.push(newButton);
+
+
+		//Sniper Ball
+		var columnX = 740
+		var columnY = 520
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#dddddd");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeSniperBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SniperBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SniperBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeSniperBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SniperBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SniperBall", "Damage"]);
+		this.elements.push(newButton);
+
+
+		//--------------Main Ball Tab Three--------------//
+		var newButton = new ButtonElement(3, "mainBallBackground", 280, gameHeight+30, 100, 100, true, "#F4EED7", true, "#000", squareClickFunction, "");
+		this.elements.push(newButton)
+		var newBall = new UIBallElement(3, 330, gameHeight + 80, 40, "#4ef442");
+		this.elements.push(newBall);
+
+		//Main Ball
+		var columnX = 400
+		var columnY = 475
+		var newButton = new ButtonElement(3, "upgradeMainBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(3, "upgradeMainBallSpeed", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(3, "upgradeMainBallSize", columnX + 10, columnY + 130, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Size", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Size"]);
 		this.elements.push(newButton);
 
 
@@ -497,13 +576,13 @@ class NormalBlock {
 
 var randomVelList = [-1,1]
 class Ball{
-	constructor(circleX, circleY, circleRadius, colour, speed){
+	constructor(circleX, circleY, circleRadius, colour, stats){
 		this.circleRadius = circleRadius;
 		this.circleX = circleX;
 		this.circleY = circleY;
 		this.velX = randomVelList[Math.floor(Math.random()*randomVelList.length)];
 		this.velY = randomVelList[Math.floor(Math.random()*randomVelList.length)];
-		this.speed = speed;
+		this.stats = stats;
 		this.colour = colour;
 	}
 
@@ -512,11 +591,35 @@ class Ball{
 		this.handleBlockHit();
 	}
 
-	updatePos(){
-		//Movement
-		this.circleX = this.circleX + (this.velX * this.speed);
-		this.circleY = this.circleY + (this.velY * this.speed);
+	updateStat(ballName, stat){
+		console.log("updating", stat);
+		this.stats[stat] = shop.ballUpgrades[ballName][stat]["Amount"];
+		if(stat == "Size"){
+			this.circleRadius = shop.ballUpgrades[ballName][stat]["Amount"]
+		}
+	}
+}
 
+class NormalBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth
+		let posY = Math.random() * gameHeight
+		let radius = 15
+		let colour = "#f442f4"
+		let stats = {"Speed":shop.ballUpgrades["NormalBall"]["Speed"]["Amount"],
+					 "Damage":shop.ballUpgrades["NormalBall"]["Damage"]["Amount"]};
+		super(posX, posY, radius, colour, stats);
+		this.circleRadius = radius
+		this.colour = colour
+	}
+
+
+	updatePos(){
+		let speed = this.stats["Speed"];
+
+		//Movement
+		this.circleX = this.circleX + (this.velX * speed);
+		this.circleY = this.circleY + (this.velY * speed);
 		//----Check edges of game----//
 		if (this.circleX + this.circleRadius >= gameWidth){
 			this.velX = -Math.abs(this.velX)
@@ -530,20 +633,7 @@ class Ball{
 		if (this.circleY - this.circleRadius < 0){
 			this.velY = Math.abs(this.velY)
 		}
-	}
-}
 
-class NormalBall extends Ball{
-	constructor(){
-		let posX = Math.random() * gameWidth
-		let posY = Math.random() * gameHeight
-		let radius = 15
-		let colour = "#f442f4"
-		let speed = shop.normalBallSpeed;
-		super(posX, posY, radius, colour, speed);
-		this.damage = shop.normalBallDamage;
-		this.circleRadius = radius
-		this.colour = colour
 	}
 
 	handleBlockHit(){
@@ -551,10 +641,11 @@ class NormalBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randArray = [1]
 		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
-			damageBlock(block, this.damage);
+
+			damageBlock(block, this.stats["Damage"]);
 		}
 		if (isTouchingBlock == "leftTouching"){
 			this.velX = Math.abs(this.velX) * randPercent;
@@ -583,12 +674,33 @@ class SpeedBall extends Ball{
 		let posY = Math.random() * gameHeight
 		let radius = 15
 		let colour = "#42f4ee"
-		let speed = shop.speedBallSpeed;
-		super(posX, posY, radius, colour, speed);
-		this.damage = shop.speedBallDamage;
+		let stats = {"Speed":shop.ballUpgrades["SpeedBall"]["Speed"]["Amount"],
+					 "Damage":shop.ballUpgrades["SpeedBall"]["Damage"]["Amount"]};
+		super(posX, posY, radius, colour, stats);
 		this.circleRadius = radius
 		this.colour = colour
 		
+	}
+
+
+	updatePos(){
+		let speed = this.stats["Speed"];
+		//Movement
+		this.circleX = this.circleX + (this.velX * speed);
+		this.circleY = this.circleY + (this.velY * speed);
+		//----Check edges of game----//
+		if (this.circleX + this.circleRadius >= gameWidth){
+			this.velX = -Math.abs(this.velX)
+		}
+		if (this.circleX - this.circleRadius < 0){
+			this.velX = Math.abs(this.velX)
+		}
+		if (this.circleY + this.circleRadius >= gameHeight){
+			this.velY = -Math.abs(this.velY)
+		}
+		if (this.circleY - this.circleRadius < 0){
+			this.velY = Math.abs(this.velY)
+		}
 	}
 
 	handleBlockHit(){
@@ -599,7 +711,8 @@ class SpeedBall extends Ball{
 		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
 		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
-			damageBlock(block, this.damage);
+
+			damageBlock(block, this.stats["Damage"]);
 		}
 		if (isTouchingBlock == "leftTouching"){
 			this.velX = Math.abs(this.velX) * randPercent;
@@ -621,6 +734,321 @@ class SpeedBall extends Ball{
 		}
 	}
 }
+
+class BombBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth
+		let posY = Math.random() * gameHeight
+		let radius = 15
+		let colour = "#000"
+		let stats = {"Speed":1,
+					 "Range":shop.ballUpgrades["BombBall"]["Range"]["Amount"],
+					 "Damage":shop.ballUpgrades["BombBall"]["Damage"]["Amount"]};
+		super(posX, posY, radius, colour, stats);
+		this.circleRadius = radius
+		this.colour = colour
+		
+	}
+
+
+	updatePos(){
+		let speed = this.stats["Speed"];
+
+		//Movement
+		this.circleX = this.circleX + (this.velX * speed);
+		this.circleY = this.circleY + (this.velY * speed);
+		//----Check edges of game----//
+		if (this.circleX + this.circleRadius >= gameWidth){
+			this.velX = -Math.abs(this.velX)
+		}
+		if (this.circleX - this.circleRadius < 0){
+			this.velX = Math.abs(this.velX)
+		}
+		if (this.circleY + this.circleRadius >= gameHeight){
+			this.velY = -Math.abs(this.velY)
+		}
+		if (this.circleY - this.circleRadius < 0){
+			this.velY = Math.abs(this.velY)
+		}
+
+		//Draw circle radius
+		//c.beginPath()
+		//c.arc(this.circleX, this.circleY, this.stats["Range"] * gameBoard.blockPixelWidth, 0, Math.PI * 2, false);
+		//c.lineWidth = 5;
+		//c.strokeStyle = "black";
+		//c.stroke();
+		//c.closePath();
+	}
+
+	handleBlockHit(){
+		//Damage block
+		var result = checkTouchingSideAndBrick(this)
+		var isTouchingBlock = result[0];
+		var block = result[1];
+		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
+		if(isTouchingBlock != false){
+			damageBlock(block, this.stats["Damage"]);
+			//console.log(this.stats["Range"])
+			damageNearbyBlocks(this.circleX, this.circleY, this.stats["Range"] * gameBoard.blockPixelWidth, this.stats["Damage"])
+		}
+		if (isTouchingBlock == "leftTouching"){
+			this.velX = Math.abs(this.velX) * randPercent;
+			this.circleX += 5;
+		} 
+		if (isTouchingBlock == "rightTouching"){
+			this.velX = -Math.abs(this.velX) * randPercent;
+			this.circleX -= 5;
+		} 
+		if (isTouchingBlock == "topTouching"){
+			//Positive
+			this.velY = Math.abs(this.velY) * randPercent;
+			this.circleY += 5;
+		} 
+		if (isTouchingBlock == "bottomTouching"){
+			//Negative
+			this.velY = -Math.abs(this.velY) * randPercent;
+			this.circleY -= 5;
+		}
+	}
+}
+
+class MainBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth;
+		let posY = Math.random() * gameHeight;
+		let colour = "#4ef442";
+		let stats = {"Speed":shop.ballUpgrades["MainBall"]["Speed"]["Amount"],
+					 "Damage":shop.ballUpgrades["MainBall"]["Damage"]["Amount"],
+					 "Size":shop.ballUpgrades["MainBall"]["Size"]["Amount"]};
+		let radius = stats["Size"];
+		super(posX, posY, radius, colour, stats);
+		this.circleRadius = stats["Size"];
+		this.colour = colour;
+	}
+	updatePos(){
+		let speed = this.stats["Speed"];
+
+
+		///////////////////
+		if (playerMouse.posX == undefined){
+			var diffY = this.circleY - 0
+			var diffX = this.circleX - 0
+		}
+		else{
+			var diffY = this.circleY - playerMouse.posY
+			var diffX = this.circleX - playerMouse.posX
+		}
+		//console.log(diffX, diffY)
+		this.velX = Math.cos(Math.atan2(diffY, diffX))
+		this.velY = Math.sin(Math.atan2(diffY, diffX))
+		//console.log(move_x, move_y)
+
+		//Movement
+		if(Math.abs(diffX) > 3 || Math.abs(diffY) > 3){
+			//console.log(Math.floor(this.circleX), Math.floor(playerMouse.posX))
+			this.circleX = this.circleX - (this.velX * speed);
+			this.circleY = this.circleY - (this.velY * speed);
+		}
+		//----Check edges of game----//
+		if (this.circleX + this.circleRadius >= gameWidth){
+			this.circleX -= speed;
+		}
+		if (this.circleX - this.circleRadius < 0){
+			this.circleX += speed;
+		}
+		if (this.circleY + this.circleRadius >= gameHeight){
+			this.circleY -= speed;
+		}
+		if (this.circleY - this.circleRadius < 0){
+			this.circleY += speed;
+		}
+	}
+
+	handleBlockHit(){
+		//Damage block
+		var result = checkTouchingSideAndBrick(this)
+		var isTouchingBlock = result[0];
+		var block = result[1];
+		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
+		if(isTouchingBlock != false){
+
+			damageBlock(block, this.stats["Damage"]);
+		}
+		if (isTouchingBlock == "leftTouching"){
+			this.velX = Math.abs(this.velX) * randPercent;
+			this.circleX += 5;
+		} 
+		if (isTouchingBlock == "rightTouching"){
+			this.velX = -Math.abs(this.velX) * randPercent;
+			this.circleX -= 5;
+		} 
+		if (isTouchingBlock == "topTouching"){
+			//Positive
+			this.velY = Math.abs(this.velY) * randPercent;
+			this.circleY += 5;
+		} 
+		if (isTouchingBlock == "bottomTouching"){
+			//Negative
+			this.velY = -Math.abs(this.velY) * randPercent;
+			this.circleY -= 5;
+		}
+	}
+}
+game.circleArray.push(new MainBall())
+
+
+class SniperBall extends Ball{
+	constructor(){
+		let posX = Math.random() * gameWidth
+		let posY = Math.random() * gameHeight
+		let radius = 15
+		let colour = "#dddddd"
+		let stats = {"Speed":shop.ballUpgrades["SniperBall"]["Speed"]["Amount"],
+					 "Damage":shop.ballUpgrades["SniperBall"]["Damage"]["Amount"]};
+		super(posX, posY, radius, colour, stats);
+		this.circleRadius = radius
+		this.colour = colour
+		this.destX = 0;
+		this.destY = 0;
+		this.velX = -1;
+		this.velY = -1;
+
+	}
+	updatePos(){
+		let speed = this.stats["Speed"];
+
+
+		//Movement
+		this.circleX = this.circleX + (this.velX * speed);
+		this.circleY = this.circleY + (this.velY * speed);
+		//----Check edges of game----//
+		if (this.circleX + this.circleRadius >= gameWidth){
+			this.velX = -Math.abs(this.velX)
+			this.doSnipeDest()
+		}
+		if (this.circleX - this.circleRadius < 0){
+			this.velX = Math.abs(this.velX)
+			this.doSnipeDest()
+		}
+		if (this.circleY + this.circleRadius >= gameHeight){
+			this.velY = -Math.abs(this.velY)
+			this.doSnipeDest()
+		}
+		if (this.circleY - this.circleRadius < 0){
+			this.velY = Math.abs(this.velY)
+			this.doSnipeDest()
+		}
+
+		//Draw circle radius
+		//c.beginPath()
+		//c.arc(this.circleX, this.circleY, this.stats["Range"] * gameBoard.blockPixelWidth, 0, Math.PI * 2, false);
+		//c.lineWidth = 5;
+		//c.strokeStyle = "black";
+		//c.stroke();
+		//c.closePath();
+	}
+
+	doSnipeDest(){
+
+		var returned = getClosestBlockPos(this.circleX, this.circleY)
+		this.destX = returned[0];
+		this.destY = returned[1];
+
+		var diffX = this.circleX - this.destX;
+		var diffY = this.circleY - this.destY;
+
+		this.velX = -Math.cos(Math.atan2(diffY, diffX))
+		this.velY = -Math.sin(Math.atan2(diffY, diffX))
+	}
+
+	handleBlockHit(){
+		//Damage block
+		var result = checkTouchingSideAndBrick(this)
+		var isTouchingBlock = result[0];
+		var block = result[1];
+		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
+		if(isTouchingBlock != false){
+
+			damageBlock(block, this.stats["Damage"]);
+		}
+		if (isTouchingBlock == "leftTouching"){
+			this.velX = Math.abs(this.velX) * randPercent;
+			this.circleX += 5;
+		} 
+		if (isTouchingBlock == "rightTouching"){
+			this.velX = -Math.abs(this.velX) * randPercent;
+			this.circleX -= 5;
+		} 
+		if (isTouchingBlock == "topTouching"){
+			//Positive
+			this.velY = Math.abs(this.velY) * randPercent;
+			this.circleY += 5;
+		} 
+		if (isTouchingBlock == "bottomTouching"){
+			//Negative
+			this.velY = -Math.abs(this.velY) * randPercent;
+			this.circleY -= 5;
+		}
+	}
+}
+
+
+function getClosestBlockPos(posX, posY){
+	var closestX = 9999;
+	var closestY = 9999;
+	var closestBlockPosX = undefined;
+	var closestBlockPosY = undefined;
+	for (i=0; i<gameBoard.blockWidth; i++){
+		for (j=0; j<gameBoard.blockHeight; j++){
+			arrayLoc = i + j*gameBoard.blockWidth
+			checkBlock = gameBoard.gameArray[arrayLoc];
+			rectX = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
+			rectY = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
+			rectWidth = gameBoard.blockPixelWidth;
+			rectHeight = gameBoard.blockPixelHeight;
+			if (!(checkBlock instanceof EmptyBlock)){
+				xDist = Math.abs(rectX - posX)
+				yDist = Math.abs(rectY - posY)
+				if (xDist < closestY && yDist < closestY){
+					//console.log(xDist, yDist)
+					closestX = xDist;
+					closestY = yDist;
+					closestBlockPosX = rectX;
+					closestBlockPosY = rectY;
+				}
+			}
+		}
+	}
+	return [closestBlockPosX, closestBlockPosY]
+}
+
+function damageNearbyBlocks(posX, posY, range, damage){
+	//Checks the center of each block from the X,Y coords
+
+
+	for (i=0; i<gameBoard.blockWidth; i++){
+		for (j=0; j<gameBoard.blockHeight; j++){
+			arrayLoc = i + j*gameBoard.blockWidth
+			checkBlock = gameBoard.gameArray[arrayLoc];
+			rectX = gameBoard.blockPixelGap + (i*(gameBoard.blockPixelWidth)) + i*gameBoard.blockPixelGap;
+			rectY = (j*gameBoard.blockPixelHeight) + gameBoard.blockPixelGap * (j + 1);
+			rectWidth = gameBoard.blockPixelWidth;
+			rectHeight = gameBoard.blockPixelHeight;
+			if (!(checkBlock instanceof EmptyBlock)){
+				//console.log(rectX + (rectWidth / 2), rectY + (rectHeight / 2))
+				xDist = Math.abs(rectX - posX)
+				yDist = Math.abs(rectY - posY)
+				if (xDist < range && yDist < range){
+					damageBlock(checkBlock, damage)
+				}
+			}
+		}
+	}
+}
+
 
 function checkTouchingSideAndBrick(ball){
 	//----Check bricks----//
@@ -871,8 +1299,8 @@ function animateLoop(){
 	c.clearRect(0, 0, gameWidth, gameHeight);
 	drawBackground();
 	drawBlocks();
-	ui.drawTabOne();
 	game.drawAndUpdateBalls();
+	ui.drawTabOne();
 
 	if (blocksAreEmpty()){
 		console.log("Finished board!")
@@ -891,9 +1319,6 @@ function animateLoop(){
 	requestAnimationFrame(animateLoop);
 }
 
-function printShit(){
-	//console.log()
-}
 
 function Main(){
 
@@ -912,10 +1337,7 @@ function Main(){
 	//	game.circleArray.push(new NormalBall(randPosX, randPosY, radius, velX, velY, colour))
 	//}
 	ui.setup();
-
-
-	setInterval(printShit, 200);
-	animateLoop(ui);
+	animateLoop();
 
 }
 
