@@ -34,9 +34,28 @@ class Game{
 		this.clickDamageCost = 10;
 		this.circleArray = [];
 
+		//Statistics
+		this.statistics = {"Total Clicks": 0,
+						  "Money Earned": 0}
+
+	}
+
+	getStatistics(stat){
+		return stat + ": " + this.statistics[stat];
 	}
 	getMoney(){
 		return this.money;
+	}
+
+	addMoney(amount){ 
+		if(amount > 0){
+			this.money += amount;
+			this.statistics["Money Earned"] += 1;
+		}
+	}
+
+	spendMoney(amount){
+		this.money -= amount;
 	}
 
 	drawAndUpdateBalls(){
@@ -74,12 +93,23 @@ class GameBoard{
 	}
 
 	setupBoardArray(){
+		//Generate differently for levels 1-5
+		if (game.level <= 10){
+			console.log(game.level / 10 / 3)
+			this.generateBoard(game.level / 10 / 3)
+		}
+		else{
+			this.generateBoard(0.25)
+		}
+
+	}
+	generateBoard(percentBlocks){
 		//---Full Board---//
 		this.gameArray = []
 		for (var i=0; i<this.blockWidth; i++){
 			for (var j=0; j<this.blockHeight; j++){
 				//Do 80% empty
-				if (Math.random() < 0.85){
+				if (Math.random() > percentBlocks){
 				var newBlock = new EmptyBlock();
 				}
 				else{
@@ -90,15 +120,31 @@ class GameBoard{
 				this.gameArray.push(newBlock);
 			}
 		}
+	}
+
 }
 
-
+function getStatistics(stat){
+	return game.getStatistics(stat);
 }
 
 game = new Game();
 gameBoard = new GameBoard();
 
-function getMoney(){
+function getMoneyText(){
+	money = game.getMoney()
+	if(money >= 1000000000000000){
+		return (money/1000000000000000).toFixed(2) + "Q$"
+	}
+	if(money >= 1000000000000){
+		return (money/1000000000000).toFixed(2) + "T$"
+	}
+	if(money >= 1000000000){
+		return (money/1000000000).toFixed(2) + "B$"
+	}
+	if(money >= 1000){
+		return (money.toLocaleString()) + "$"
+	}
 	return (game.getMoney()) + "$";
 }
 
@@ -121,7 +167,8 @@ function squareClickFunction(){
 function buyClickDamage(){
 	if (game.money >= game.clickDamageCost){
 		game.clickDamage = game.clickDamage + 1
-		game.money -= game.clickDamageCost;
+		game.spendMoney(game.clickDamageCost);
+		game.clickDamageCost = Math.floor((game.clickDamageCost + 3) * 1.1);
 	}
 }
 
@@ -148,7 +195,7 @@ class Shop{
 		    }
 		  },
 		  "NormalBall": {
-		  	"ballPrice": 20,
+		  	"ballPrice": 50,
 		    "Speed": {
 		      "Amount": 1,
 		      "Cost": 20
@@ -159,7 +206,7 @@ class Shop{
 		    }
 		  },
 		  "SpeedBall": {
-		  	"ballPrice": 50,
+		  	"ballPrice": 250,
 		    "Speed": {
 		      "Amount": 3,
 		      "Cost": 50
@@ -170,7 +217,7 @@ class Shop{
 		    }
 		  },
 		  "BombBall": {
-		  	"ballPrice": 100,
+		  	"ballPrice": 2500,
 		    "Damage": {
 		      "Amount": 1,
 		      "Cost": 500
@@ -181,7 +228,7 @@ class Shop{
 		    }
 		  },
 		  "SniperBall": {
-		  	"ballPrice": 100,
+		  	"ballPrice": 2500,
 		    "Damage": {
 		      "Amount": 1,
 		      "Cost": 500
@@ -206,8 +253,8 @@ class Shop{
 		var cost = this.getPrice(ballName);
 		console.log("Cost:", cost)
 		if (game.money >= cost){
-			game.money -= cost;
-			this.ballUpgrades[ballName]["ballPrice"] = Math.floor((this.ballUpgrades[ballName]["ballPrice"] + 3) * 1.1);
+			game.spendMoney(cost);
+			this.ballUpgrades[ballName]["ballPrice"] = Math.floor((this.ballUpgrades[ballName]["ballPrice"] + 3) * 2);
 			console.log("Right cost")
 			if (ballName == "NormalBall"){
 				game.circleArray.push(new NormalBall())
@@ -229,7 +276,7 @@ class Shop{
 		var amount = nameStatArray[2];
 		console.log(name, stat, amount)
 		if(game.money > this.ballUpgrades[name][stat]["Cost"]){
-			game.money -= this.ballUpgrades[name][stat]["Cost"];
+			game.spendMoney(this.ballUpgrades[name][stat]["Cost"]);
 			this.ballUpgrades[name][stat]["Amount"] = Math.round((this.ballUpgrades[name][stat]["Amount"] + amount) * 10) / 10;
 			this.ballUpgrades[name][stat]["Cost"] = Math.round(this.ballUpgrades[name][stat]["Cost"] * 1.25);
 			updateBalls(name, stat)
@@ -266,15 +313,8 @@ function getUpgradeText(ballNameStatArray){
 	return stat + ": " +shop.ballUpgrades[ballName][stat]["Amount"] + " ($" + shop.ballUpgrades[ballName][stat]["Cost"] + ")";
 }
 
-function getTabOneText(){
-	return "Main";
-}
-function getTabTwoText(){
-	return "Upgrades";
-}
-
-function getTabThreeText(){
-	return "Main Ball";
+function returnText(text){
+	return text;
 }
 
 function getBlockedText(level){
@@ -335,9 +375,9 @@ class UserInterface{
 	}
 	setup(){
 		//Bottom outline
-		var newButton = new ButtonElement(0, "uiBackground", 0, gameHeight, gameWidth, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
+		var newButton = new ButtonElement(0, "uiBackground", 0, gameHeight, gameWidth + 1, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(0, "moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getMoney);
+		var newButton = new ButtonElement(0, "moneyText", 50, 590, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getMoneyText);
 		this.elements.push(newButton);
 		var newButton = new ButtonElement(0, "clickDamageText", 50, 550, 120, 30, true, "#55D400", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "right", getClickDamageText);
 		this.elements.push(newButton);
@@ -347,15 +387,20 @@ class UserInterface{
 		this.elements.push(newButton);
 
 		//Tab buttons
-		var newButton = new ButtonElement(0, "tabOne", 50, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 1, true, "18px Oswald", "white", "center", getTabOneText);
+		//Main
+		var newButton = new ButtonElement(0, "tabOne", 50, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 1, true, "18px Oswald", "white", "center", returnText, "Main");
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(0, "tabTwo", 170, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 2, true, "18px Oswald", "white", "center", getTabTwoText);
+		//Upgrades
+		var newButton = new ButtonElement(0, "tabTwo", 170, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 2, true, "18px Oswald", "white", "center", returnText, "Upgrades");
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(0, "tabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "white", "center", getTabThreeText);
+		//Main Ball (Locked lv 10)
+		//var newButton = new ButtonElement(0, "tabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "white", "center", getTabThreeText);
+		//this.elements.push(newButton);
+		//Settings
+		var newButton = new ButtonElement(0, "tabSeven", 879, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 7, true, "18px Oswald", "white", "center", returnText, "Statistics");
 		this.elements.push(newButton);
-
 		//Blocked tab buttons
-		var newButton = new ButtonElement(0, "blockedTabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "gray", "center", getBlockedText, 5);
+		var newButton = new ButtonElement(0, "blockedTabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", squareClickFunction, "", true, "18px Oswald", "gray", "center", getBlockedText, 10);
 		this.elements.push(newButton);
 
 		//--------------Main Tab One--------------//
@@ -370,8 +415,22 @@ class UserInterface{
 		newUIBallElement.setup();
 
 		//--------------Ugrades Tab Two--------------//
+
+		//Larger background for tab two
+		var newButton = new ButtonElement(2, "tabTwoBackground", 290, gameHeight - 200, gameWidth - 253, 300, true, "#c7dbe2", false, "#000", squareClickFunction, "");
+		this.elements.push(newButton);
+		//Left side stroke
+		var newButton = new ButtonElement(2, "tabTwoBackground", 290, gameHeight - 200, 0, 200, true, "#c7dbe2", true, "#000", squareClickFunction, "");
+		this.elements.push(newButton);
+		//Top side stroke
+		var newButton = new ButtonElement(2, "tabTwoBackground", 290, gameHeight - 200, gameWidth - 253, 0, true, "#c7dbe2", true, "#000", squareClickFunction, "");
+		this.elements.push(newButton);
+		//Text
+		var newButton = new ButtonElement(2, "ballUpgradesText", 500, gameHeight - 175, 250, 30, false, "#4286f4", true , "#000", squareClickFunction, "", true, "22px Oswald", "black", "center", returnText, "Ball Upgrades");
+		this.elements.push(newButton);
+ 
 		//Normal Ball
-		var columnX = 260
+		var columnX = 320
 		var columnY = 520
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#f442f4");
 		this.elements.push(newBall);
@@ -381,7 +440,7 @@ class UserInterface{
 		this.elements.push(newButton);
 
 		//Speed Ball
-		var columnX = 420
+		var columnX = 480
 		var columnY = 520
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#42f4ee");
 		this.elements.push(newBall);
@@ -391,7 +450,7 @@ class UserInterface{
 		this.elements.push(newButton);
 
 		//Bomb Ball
-		var columnX = 580
+		var columnX = 640
 		var columnY = 520
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#000");
 		this.elements.push(newBall);
@@ -402,8 +461,47 @@ class UserInterface{
 
 
 		//Sniper Ball
-		var columnX = 740
+		var columnX = 800
 		var columnY = 520
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#dddddd");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeSniperBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SniperBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SniperBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeSniperBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SniperBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SniperBall", "Damage"]);
+		this.elements.push(newButton);
+
+		//BALL UPGRADES REPEATT
+		//Normal Ball
+		var columnX = 320
+		var columnY = 380
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#f442f4");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeNormalBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "Speed", 0.1], true, "18px Oswald", "white", "center", getUpgradeText, ["NormalBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeNormalBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["NormalBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["NormalBall", "Damage"]);
+		this.elements.push(newButton);
+
+		//Speed Ball
+		var columnX = 480
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#42f4ee");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "Speed", 0.3], true, "18px Oswald", "white", "center", getUpgradeText, ["SpeedBall", "Speed"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeSpeedBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SpeedBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SpeedBall", "Damage"]);
+		this.elements.push(newButton);
+
+		//Bomb Ball
+		var columnX = 640
+		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#000");
+		this.elements.push(newBall);
+		var newButton = new ButtonElement(2, "upgradeBombBallDamage", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["BombBall", "Damage", 3], true, "18px Oswald", "white", "center", getUpgradeText, ["BombBall", "Damage"]);
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(2, "upgradeBombBallRange", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["BombBall", "Range", 0.1], true, "18px Oswald", "white", "center", getUpgradeText, ["BombBall", "Range"]);
+		this.elements.push(newButton);
+
+
+		//Sniper Ball
+		var columnX = 800
 		var newBall = new UIBallElement(2, columnX + 80, columnY + 20, 15, "#dddddd");
 		this.elements.push(newBall);
 		var newButton = new ButtonElement(2, "upgradeSniperBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["SniperBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["SniperBall", "Speed"]);
@@ -421,13 +519,22 @@ class UserInterface{
 		//Main Ball
 		var columnX = 400
 		var columnY = 475
-		var newButton = new ButtonElement(3, "upgradeMainBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Speed"]);
+		var newButton = new ButtonElement(3, "upgradeMainBallSpeed", columnX + 10, columnY + 50, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Speed", 0.1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Speed"]);
 		this.elements.push(newButton);
-		var newButton = new ButtonElement(3, "upgradeMainBallSpeed", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Speed", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Speed"]);
+		var newButton = new ButtonElement(3, "upgradeMainBallDamage", columnX + 10, columnY + 90, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Damage", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Damage"]);
 		this.elements.push(newButton);
 		var newButton = new ButtonElement(3, "upgradeMainBallSize", columnX + 10, columnY + 130, 140, 30, true, "#4256f4", true, "#000", shopupgrade, ["MainBall", "Size", 1], true, "18px Oswald", "white", "center", getUpgradeText, ["MainBall", "Size"]);
 		this.elements.push(newButton);
 
+		//--------------Stastistics Tab Seven--------------//
+		var newButton = new ButtonElement(7, "statsText", 300, 520, 150, 30, false, "#4286f4", false, "#000", squareClickFunction, "", true, "18px Oswald", "black", "center", returnText, "Player Stats");
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(7, "totalClicksText", 300, 550, 150, 30, true, "#4286f4", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "center", getStatistics, "Total Clicks");
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(7, "moneyEarnedText", 300, 580, 150, 30, true, "#4286f4", true, "#000", squareClickFunction, "", true, "18px Oswald", "white", "center", getStatistics, "Money Earned");
+		this.elements.push(newButton);
+		var newButton = new ButtonElement(7, "ballStatsText", 450, 520, 150, 30, false, "#4286f4", false, "#000", squareClickFunction, "", true, "18px Oswald", "black", "center", returnText, "Ball Stats");
+		this.elements.push(newButton);
 
 	}
 	drawTabOne(){
@@ -708,7 +815,7 @@ class SpeedBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randArray = [1]
 		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
 
@@ -785,7 +892,7 @@ class BombBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randArray = [1]
 		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
 			damageBlock(block, this.stats["Damage"]);
@@ -870,7 +977,7 @@ class MainBall extends Ball{
 		var result = checkTouchingSideAndBrick(this)
 		var isTouchingBlock = result[0];
 		var block = result[1];
-		var randArray = [0.7, 0.8, 0.9, 0.95, 1, 1.05, 1.1, 1.2, 1.3]
+		var randArray = [1]
 		var randPercent = randArray[Math.floor(Math.random()*randArray.length)];
 		if(isTouchingBlock != false){
 
@@ -896,7 +1003,7 @@ class MainBall extends Ball{
 		}
 	}
 }
-game.circleArray.push(new MainBall())
+
 
 
 class SniperBall extends Ball{
@@ -1097,6 +1204,7 @@ function mouseDownHandler(event){
 		mouseX = event.clientX
 		mouseY = event.clientY
 		handleLeftClick(mouseX, mouseY)
+		game.statistics["Total Clicks"] += 1;
 		
 }
 
@@ -1124,7 +1232,7 @@ function handleLeftClick(posX, posY){
 		if (element instanceof ButtonElement){
 			isTouchingElement= mouseTouchingRect(element.posX, element.posY, element.width, element.height)
 			if (isTouchingElement){
-				console.log("Touching element", element.name)
+				//console.log("Touching element", element.name)
 				if (ui.currentTab == element.tab || element.tab == 0){ 
 					element.runFunction(element.params);
 				}
@@ -1148,12 +1256,12 @@ function mouseTouchingRect(rectX, rectY, rectWidth, rectHeight){
 
 function damageBlock(block, damage){
 	if (block.health - damage <= 0){
-		game.money += block.health;
+		game.addMoney(block.health);
 		newBlock = new EmptyBlock
 		gameBoard.gameArray[arrayLoc] = newBlock
 	}
 	else if(block.health != null){
-		game.money += damage;
+		game.addMoney(damage);
 		block.health = block.health - damage;
 	}
 }
@@ -1289,7 +1397,18 @@ function blocksAreEmpty(){
 	return blocksEmpty;
 }
 
-
+function handleFinishedLevel(){
+	console.log("Finished board!");
+	game.level += 1;
+	gameBoard.setupBoardArray();
+	if(game.level == 10){
+		//Spawn tab 5 button over the top of the locked one
+		var newButton = new ButtonElement(0, "tabThree", 290, gameHeight + 170, 120, 30, true, "#4256f4", true, "#000", setTab, 3, true, "18px Oswald", "white", "center", returnText, "Player Ball");
+		ui.elements.push(newButton);
+		//Spawn the player ball
+		game.circleArray.push(new MainBall())
+	}
+}
 
 frameCount = 0
 oldUnixTime = Date.now()
@@ -1303,9 +1422,7 @@ function animateLoop(){
 	ui.drawTabOne();
 
 	if (blocksAreEmpty()){
-		console.log("Finished board!")
-		game.level += 1;
-		gameBoard.setupBoardArray();
+		handleFinishedLevel()
 	}
 	
 
